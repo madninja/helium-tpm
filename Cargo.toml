@@ -1,0 +1,12 @@
+[package]
+authors = ["Iegor <iegor@freedomfi.com>"]
+name = "helium-tpm"
+version = "0.1.0"
+edition = "2018"
+
+[dependencies]
+libc = "0"
+thiserror = "1"
+p256 = { version="0.10.0", default-features=false, features=["arithmetic", "ecdsa", "sha256", "ecdh"] }
+tss2 = { git = "https://github.com/openEPC/tss2-rs.git", branch = "master" }
+
