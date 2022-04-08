@@ -93,17 +93,18 @@ fn free_esys_resources (esys_ctx: &mut *mut ESYS_CONTEXT, esys_key_handle: ESYS_
 
 pub fn public_key(key_path: &String) -> Result<Vec<u8>> {
     unsafe {
+        let tpm_ctx = tpm().lock().unwrap();
         let mut result: TSS2_RC = TSS2_RC_SUCCESS;
         let mut esys_key_handle: ESYS_TR = u32::MAX;
         let mut blob_type: u8 = 0;
         let mut esys_blob: *mut u8 = null_mut();
         let mut blob_sz: tss2::size_t = 0;
         let mut offset: tss2::size_t = 0;
-        result = with_tpm(|tpm_ctx| Fapi_GetEsysBlob(tpm_ctx,
-                                                     CString::new(key_path.as_bytes()).unwrap().as_ptr(),
-                                                     &mut blob_type as *mut u8,
-                                                     &mut esys_blob as *mut *mut u8,
-                                                     &mut blob_sz as *mut tss2::size_t));
+        result = Fapi_GetEsysBlob(*tpm_ctx,
+                                 CString::new(key_path.as_bytes()).unwrap().as_ptr(),
+                                 &mut blob_type as *mut u8,
+                                 &mut esys_blob as *mut *mut u8,
+                                 &mut blob_sz as *mut tss2::size_t);
         if result != TSS2_RC_SUCCESS {
             return Err(Error::tpm_error(String::from("Fapi_GetEsysBlob"), result));
         }
@@ -123,7 +124,7 @@ pub fn public_key(key_path: &String) -> Result<Vec<u8>> {
         }
 
         let mut tcti_ctx: *mut TSS2_TCTI_CONTEXT = null_mut();
-        result = with_tpm(|tpm_ctx| Fapi_GetTcti(tpm_ctx, &mut tcti_ctx as *mut *mut TSS2_TCTI_CONTEXT));
+        result = Fapi_GetTcti(*tpm_ctx, &mut tcti_ctx as *mut *mut TSS2_TCTI_CONTEXT);
         if result != TSS2_RC_SUCCESS {
             return Err(Error::tpm_error(String::from("Fapi_GetTcti"), result));
         }
@@ -174,6 +175,7 @@ pub fn public_key(key_path: &String) -> Result<Vec<u8>> {
 
 pub fn ecdh(point: EncodedPoint<NistP256>, path: &String) -> Result<Vec<u8>> {
     unsafe {
+        let tpm_ctx = tpm().lock().unwrap();
         let mut result: TSS2_RC;
         let mut esys_key_handle: ESYS_TR = u32::MAX;
         let mut blob_type: u8 = 0;
@@ -181,13 +183,11 @@ pub fn ecdh(point: EncodedPoint<NistP256>, path: &String) -> Result<Vec<u8>> {
         let mut blob_sz: tss2::size_t = 0;
         let mut offset: tss2::size_t = 0;
 
-        result = with_tpm(|tpm_ctx| {
-            Fapi_GetEsysBlob(tpm_ctx,
+        result = Fapi_GetEsysBlob(*tpm_ctx,
                              CString::new(path.as_bytes()).unwrap().as_ptr(),
                              &mut blob_type as *mut u8,
                              &mut esys_blob as *mut *mut u8,
-                             &mut blob_sz as *mut tss2::size_t)
-        });
+                             &mut blob_sz as *mut tss2::size_t);
 
         if result != TSS2_RC_SUCCESS {
             return Err(Error::tpm_error(String::from("Fapi_GetEsysBlob"), result));
@@ -205,7 +205,7 @@ pub fn ecdh(point: EncodedPoint<NistP256>, path: &String) -> Result<Vec<u8>> {
         }
 
         let mut tcti_ctx: *mut TSS2_TCTI_CONTEXT = null_mut();
-        result = with_tpm(|tpm_ctx| Fapi_GetTcti(tpm_ctx, &mut tcti_ctx as *mut *mut TSS2_TCTI_CONTEXT));
+        result = Fapi_GetTcti(*tpm_ctx, &mut tcti_ctx as *mut *mut TSS2_TCTI_CONTEXT);
         if result != TSS2_RC_SUCCESS {
             return Err(Error::tpm_error(String::from("Fapi_GetTcti"), result));
         }
